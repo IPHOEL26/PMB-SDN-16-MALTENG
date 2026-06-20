@@ -22,6 +22,7 @@ const submitBtn = document.getElementById("submitBtn");
 const stepLabel = document.getElementById("stepLabel");
 const percentLabel = document.getElementById("percentLabel");
 const progressFill = document.getElementById("progressFill");
+const stepper = document.getElementById("stepper");
 const toast = document.getElementById("toast");
 const submitFrame = document.getElementById("submitFrame");
 const successModal = document.getElementById("successModal");
@@ -112,7 +113,23 @@ function resetToTypeSelector() {
   progressWrap.classList.add("is-hidden");
   form.classList.add("is-hidden");
   typeSelector.classList.remove("is-hidden");
+  if (stepper) stepper.innerHTML = "";
   window.scrollTo({ top: 0, behavior: "smooth" });
+}
+
+function renderStepper(steps) {
+  if (!stepper) return;
+
+  stepper.innerHTML = steps.map((step, index) => {
+    const state = index < currentStep ? "done" : index === currentStep ? "current" : "";
+    const title = step.dataset.title || `Langkah ${index + 1}`;
+    return `
+      <li class="${state}">
+        <span class="step-number">${index + 1}</span>
+        <span class="step-title">${title}</span>
+      </li>
+    `;
+  }).join("");
 }
 
 function updateStep() {
@@ -126,6 +143,8 @@ function updateStep() {
   stepLabel.textContent = `Langkah ${currentStep + 1} dari ${steps.length}: ${steps[currentStep].dataset.title}`;
   percentLabel.textContent = `${percent}%`;
   progressFill.style.width = `${percent}%`;
+  renderStepper(steps);
+
   prevBtn.style.display = currentStep === 0 ? "none" : "inline-flex";
   nextBtn.style.display = currentStep === steps.length - 1 ? "none" : "inline-flex";
   submitBtn.style.display = currentStep === steps.length - 1 ? "inline-flex" : "none";
@@ -244,6 +263,7 @@ prevBtn.addEventListener("click", () => {
 });
 
 nextBtn.addEventListener("click", () => {
+  syncMutationFields();
   if (!validateCurrentStep()) return;
   if (currentStep < getActiveSteps().length - 1) {
     currentStep += 1;
