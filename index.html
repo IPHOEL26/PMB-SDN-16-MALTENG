@@ -3,33 +3,26 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <meta name="description" content="Aplikasi Pendaftaran Murid Baru dan Murid Mutasi SD Negeri 16 Maluku Tengah Tahun Pelajaran 2026-2027" />
+  <meta name="description" content="Aplikasi Pendaftaran Murid Baru dan Murid Mutasi SD Negeri 16 Maluku Tengah" />
   <title>Pendaftaran Murid Baru dan Mutasi SD Negeri 16 Maluku Tengah</title>
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
   <main class="app-shell">
     <section class="hero-card">
-      <div class="hero-badge">PMB & MUTASI 2026-2027</div>
-      <h1>Pendaftaran Murid Baru & Mutasi</h1>
+      <div class="hero-badge">PMB &amp; MUTASI</div>
+      <h1>PMB &amp; Mutasi</h1>
       <h2>SD Negeri 16 Maluku Tengah</h2>
       <p>
-        Silakan pilih jenis pendaftaran terlebih dahulu: Murid Baru atau Murid Mutasi. Data tetap masuk ke Google Sheet yang sama untuk diverifikasi oleh operator sekolah.
+        Formulir resmi untuk layanan pendaftaran murid baru dan murid mutasi. Pilih jenis pendaftaran, lalu isi data sesuai dokumen keluarga dan dokumen sekolah asal.
       </p>
-      <div class="hero-info">
-        <span>✓ Ramah HP</span>
-        <span>✓ Murid baru dan mutasi dalam satu aplikasi</span>
-        <span>✓ Data langsung masuk Google Sheet</span>
-        <span>✓ Aman untuk verifikasi sekolah</span>
-      </div>
     </section>
 
     <section class="form-card">
       <section id="typeSelector" class="type-selector" aria-label="Pilih jenis pendaftaran">
         <div class="type-heading">
-          <span class="mini-badge">Pilih Layanan</span>
           <h2>Jenis Pendaftaran</h2>
-          <p>Pilih salah satu. Setelah dipilih, formulir akan tampil sesuai kebutuhan pendaftaran.</p>
+          <p>Pilih salah satu tombol berikut sebelum mengisi formulir.</p>
         </div>
 
         <div class="choice-grid">
@@ -48,15 +41,23 @@
       </section>
 
       <div id="progressWrap" class="progress-wrap is-hidden">
+        <div class="form-status">
+          <div>
+            <span class="status-label">Jenis Pendaftaran</span>
+            <strong id="selectedTypeLabel">Belum dipilih</strong>
+          </div>
+          <button type="button" id="changeTypeBtn" class="change-type-btn" aria-label="Ganti jenis pendaftaran">
+            <span aria-hidden="true">↻</span> Ganti Pilihan
+          </button>
+        </div>
+
+        <ol id="stepper" class="stepper" aria-label="Progres pengisian formulir"></ol>
+
         <div class="progress-top">
           <span id="stepLabel">Langkah 1 dari 7</span>
           <span id="percentLabel">14%</span>
         </div>
         <div class="progress-bar"><div id="progressFill"></div></div>
-        <div class="selected-type-row">
-          <span>Jenis: <strong id="selectedTypeLabel">Belum dipilih</strong></span>
-          <button type="button" id="changeTypeBtn">Ganti pilihan</button>
-        </div>
       </div>
 
       <form id="pmbForm" class="is-hidden" method="POST" target="submitFrame" autocomplete="on">
@@ -66,7 +67,7 @@
         <!-- LANGKAH 1 -->
         <fieldset class="step active" data-title="Data Murid">
           <legend>Data Murid</legend>
-          <p class="section-note">Isi identitas murid sesuai dokumen resmi. Untuk murid mutasi, data sekolah asal lengkap akan diisi pada langkah khusus mutasi.</p>
+          <p class="section-note">Isi identitas murid sesuai dokumen resmi.</p>
 
           <div class="grid two">
             <div class="field required">
@@ -131,6 +132,45 @@
             <div class="field">
               <label for="sekolahAsal">Sekolah Asal / TK / PAUD</label>
               <input id="sekolahAsal" name="Sekolah Asal" type="text" placeholder="Contoh: TK ..." />
+            </div>
+          </div>
+
+          <div id="mutationStep" class="mutation-panel step-hidden" aria-live="polite">
+            <div class="mutation-panel-head">
+              <h3>Data Murid Mutasi</h3>
+              <p>Isi bagian ini hanya untuk murid pindahan dari sekolah lain.</p>
+            </div>
+
+            <div class="grid two">
+              <div class="field required">
+                <label for="mutasiNama">Nama Lengkap Murid Mutasi</label>
+                <input id="mutasiNama" name="Mutasi - Nama Lengkap" type="text" placeholder="Contoh: Rani Lestari" />
+              </div>
+              <div class="field required">
+                <label for="mutasiNisn">NISN Murid Mutasi</label>
+                <input id="mutasiNisn" name="Mutasi - NISN Murid" type="text" inputmode="numeric" maxlength="10" placeholder="10 digit NISN" />
+              </div>
+            </div>
+
+            <div class="field required">
+              <label for="sekolahAsalLengkap">Nama Sekolah Asal Lengkap</label>
+              <input id="sekolahAsalLengkap" name="Mutasi - Sekolah Asal Lengkap" type="text" placeholder="Contoh: SD Negeri ..." />
+            </div>
+
+            <div class="grid three">
+              <div class="field required">
+                <label for="kabupatenAsal">Kabupaten/Kota Sekolah Asal</label>
+                <input id="kabupatenAsal" name="Mutasi - Kabupaten Sekolah Asal" type="text" placeholder="Contoh: Maluku Tengah" />
+              </div>
+              <div class="field required">
+                <label for="kecamatanAsal">Kecamatan Sekolah Asal</label>
+                <input id="kecamatanAsal" name="Mutasi - Kecamatan Sekolah Asal" type="text" placeholder="Contoh: Salahutu" />
+              </div>
+              <div class="field required">
+                <label for="npsnAsal">NPSN Sekolah Asal</label>
+                <input id="npsnAsal" name="Mutasi - NPSN Sekolah Asal" type="text" inputmode="numeric" maxlength="8" placeholder="8 digit NPSN" />
+                <small>Diisi 8 digit angka.</small>
+              </div>
             </div>
           </div>
         </fieldset>
@@ -284,48 +324,7 @@
           </div>
         </fieldset>
 
-        <!-- LANGKAH KHUSUS MUTASI -->
-        <fieldset id="mutationStep" class="step step-hidden" data-title="Data Mutasi">
-          <legend>Data Murid Mutasi</legend>
-          <p class="section-note">
-            Bagian ini hanya muncul jika memilih <strong>Murid Mutasi</strong>. Data berikut akan masuk ke kolom tambahan setelah kolom BR pada Google Sheet.
-          </p>
-
-          <div class="grid two">
-            <div class="field required">
-              <label for="mutasiNama">Nama Lengkap Murid Mutasi</label>
-              <input id="mutasiNama" name="Mutasi - Nama Lengkap" type="text" placeholder="Contoh: Rani Lestari" />
-              <small>Boleh sama dengan Nama Murid pada bagian awal.</small>
-            </div>
-            <div class="field required">
-              <label for="mutasiNisn">NISN Murid Mutasi</label>
-              <input id="mutasiNisn" name="Mutasi - NISN Murid" type="text" inputmode="numeric" maxlength="10" placeholder="10 digit NISN" />
-            </div>
-          </div>
-
-          <div class="field required">
-            <label for="sekolahAsalLengkap">Nama Sekolah Asal Lengkap</label>
-            <input id="sekolahAsalLengkap" name="Mutasi - Sekolah Asal Lengkap" type="text" placeholder="Contoh: SD Negeri ..." />
-          </div>
-
-          <div class="grid three">
-            <div class="field required">
-              <label for="kabupatenAsal">Kabupaten/Kota Sekolah Asal</label>
-              <input id="kabupatenAsal" name="Mutasi - Kabupaten Sekolah Asal" type="text" placeholder="Contoh: Maluku Tengah" />
-            </div>
-            <div class="field required">
-              <label for="kecamatanAsal">Kecamatan Sekolah Asal</label>
-              <input id="kecamatanAsal" name="Mutasi - Kecamatan Sekolah Asal" type="text" placeholder="Contoh: Salahutu" />
-            </div>
-            <div class="field required">
-              <label for="npsnAsal">NPSN Sekolah Asal</label>
-              <input id="npsnAsal" name="Mutasi - NPSN Sekolah Asal" type="text" inputmode="numeric" maxlength="8" placeholder="8 digit NPSN" />
-              <small>Diisi 8 digit angka.</small>
-            </div>
-          </div>
-        </fieldset>
-
-        <!-- LANGKAH 7 / 8 -->
+        <!-- LANGKAH 7 -->
         <fieldset class="step" data-title="Konfirmasi">
           <legend>Konfirmasi Data</legend>
           <div class="confirm-box">
