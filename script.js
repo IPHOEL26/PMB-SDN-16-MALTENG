@@ -6,7 +6,16 @@
 const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbzx6F8P2Vg2WhnYH2o4lONCX31_kc5xgE_RcfVwy3rr5DB1U__pFn0_f-6bWD6XZ4Pp/exec";
 
 const form = document.getElementById("pmbForm");
-const steps = Array.from(document.querySelectorAll(".step"));
+const allSteps = Array.from(document.querySelectorAll(".step"));
+const mutationStep = document.getElementById("mutationStep");
+const mutationInputs = mutationStep ? Array.from(mutationStep.querySelectorAll("input, select, textarea")) : [];
+const jenisPendaftaranInput = document.getElementById("jenisPendaftaran");
+const typeSelector = document.getElementById("typeSelector");
+const progressWrap = document.getElementById("progressWrap");
+const chooseNewBtn = document.getElementById("chooseNewBtn");
+const chooseMutasiBtn = document.getElementById("chooseMutasiBtn");
+const changeTypeBtn = document.getElementById("changeTypeBtn");
+const selectedTypeLabel = document.getElementById("selectedTypeLabel");
 const prevBtn = document.getElementById("prevBtn");
 const nextBtn = document.getElementById("nextBtn");
 const submitBtn = document.getElementById("submitBtn");
@@ -21,6 +30,7 @@ const summaryBox = document.getElementById("summaryBox");
 
 let currentStep = 0;
 let submitted = false;
+let registrationType = "Murid Baru";
 
 function showToast(message, type = "") {
   toast.textContent = message;
@@ -41,12 +51,77 @@ function normalizeDigitInput(selector, maxLength) {
 }
 
 normalizeDigitInput("#nik, #ayahNik, #ibuNik, #waliNik, #noKk", 16);
-normalizeDigitInput("#nisn", 10);
+normalizeDigitInput("#nisn, #mutasiNisn", 10);
 normalizeDigitInput("#kodePos", 5);
+normalizeDigitInput("#npsnAsal", 8);
 normalizeDigitInput("#hp, #telepon, #rekening", 20);
 
+function getActiveSteps() {
+  return allSteps.filter(step => !step.classList.contains("step-hidden"));
+}
+
+function setMutationFieldsState(isMutation) {
+  if (!mutationStep) return;
+
+  mutationStep.classList.toggle("step-hidden", !isMutation);
+  mutationInputs.forEach(input => {
+    input.disabled = !isMutation;
+
+    if ([
+      "mutasiNama",
+      "sekolahAsalLengkap",
+      "kabupatenAsal",
+      "kecamatanAsal",
+      "npsnAsal",
+      "mutasiNisn"
+    ].includes(input.id)) {
+      input.required = isMutation;
+    }
+
+    if (!isMutation) input.classList.remove("invalid");
+  });
+}
+
+function startForm(type) {
+  registrationType = type === "Murid Mutasi" ? "Murid Mutasi" : "Murid Baru";
+  jenisPendaftaranInput.value = registrationType;
+  selectedTypeLabel.textContent = registrationType;
+
+  const isMutation = registrationType === "Murid Mutasi";
+  setMutationFieldsState(isMutation);
+
+  typeSelector.classList.add("is-hidden");
+  progressWrap.classList.remove("is-hidden");
+  form.classList.remove("is-hidden");
+
+  submitBtn.textContent = isMutation ? "Kirim Data Mutasi" : "Kirim Pendaftaran";
+  currentStep = 0;
+  updateStep();
+}
+
+function resetToTypeSelector() {
+  form.reset();
+  currentStep = 0;
+  submitted = false;
+  submitBtn.disabled = false;
+  submitBtn.textContent = "Kirim Pendaftaran";
+  selectedTypeLabel.textContent = "Belum dipilih";
+  jenisPendaftaranInput.value = "Murid Baru";
+  setMutationFieldsState(false);
+  allSteps.forEach(step => step.classList.remove("active"));
+  progressWrap.classList.add("is-hidden");
+  form.classList.add("is-hidden");
+  typeSelector.classList.remove("is-hidden");
+  window.scrollTo({ top: 0, behavior: "smooth" });
+}
+
 function updateStep() {
-  steps.forEach((step, index) => step.classList.toggle("active", index === currentStep));
+  const steps = getActiveSteps();
+  if (currentStep > steps.length - 1) currentStep = steps.length - 1;
+
+  allSteps.forEach(step => step.classList.remove("active"));
+  steps[currentStep].classList.add("active");
+
   const percent = Math.round(((currentStep + 1) / steps.length) * 100);
   stepLabel.textContent = `Langkah ${currentStep + 1} dari ${steps.length}: ${steps[currentStep].dataset.title}`;
   percentLabel.textContent = `${percent}%`;
@@ -60,6 +135,8 @@ function updateStep() {
 }
 
 function validateField(input) {
+  if (input.disabled) return true;
+
   input.classList.remove("invalid");
 
   if (input.hasAttribute("required")) {
@@ -83,7 +160,12 @@ function validateField(input) {
     return false;
   }
 
-  if (id === "nisn" && value && !/^\d{10}$/.test(value)) {
+  if (["nisn", "mutasiNisn"].includes(id) && value && !/^\d{10}$/.test(value)) {
+    input.classList.add("invalid");
+    return false;
+  }
+
+  if (id === "npsnAsal" && value && !/^\d{8}$/.test(value)) {
     input.classList.add("invalid");
     return false;
   }
@@ -97,6 +179,7 @@ function validateField(input) {
 }
 
 function validateCurrentStep() {
+  const steps = getActiveSteps();
   const inputs = Array.from(steps[currentStep].querySelectorAll("input, select, textarea"));
   const valid = inputs.every(validateField);
   if (!valid) {
@@ -107,9 +190,22 @@ function validateCurrentStep() {
   return valid;
 }
 
+function syncMutationFields() {
+  if (registrationType !== "Murid Mutasi") return;
+
+  const nama = document.getElementById("nama");
+  const nisn = document.getElementById("nisn");
+  const mutasiNama = document.getElementById("mutasiNama");
+  const mutasiNisn = document.getElementById("mutasiNisn");
+
+  if (mutasiNama && nama && !mutasiNama.value.trim()) mutasiNama.value = nama.value.trim();
+  if (mutasiNisn && nisn && !mutasiNisn.value.trim()) mutasiNisn.value = nisn.value.trim();
+}
+
 function renderSummary() {
   const data = new FormData(form);
   const rows = [
+    ["Jenis Pendaftaran", registrationType],
     ["Nama Murid", data.get("Nama")],
     ["NIK Murid", data.get("NIK")],
     ["Tanggal Lahir", data.get("Tanggal Lahir")],
@@ -120,10 +216,25 @@ function renderSummary() {
     ["Nama Ibu", data.get("Data Ibu - Nama")],
     ["No KK", data.get("No KK")]
   ];
+
+  if (registrationType === "Murid Mutasi") {
+    rows.push(
+      ["Sekolah Asal Mutasi", data.get("Mutasi - Sekolah Asal Lengkap")],
+      ["Kabupaten Sekolah Asal", data.get("Mutasi - Kabupaten Sekolah Asal")],
+      ["Kecamatan Sekolah Asal", data.get("Mutasi - Kecamatan Sekolah Asal")],
+      ["NPSN Sekolah Asal", data.get("Mutasi - NPSN Sekolah Asal")],
+      ["NISN Murid Mutasi", data.get("Mutasi - NISN Murid")]
+    );
+  }
+
   summaryBox.innerHTML = rows.map(([label, value]) => `
     <div class="summary-row"><strong>${label}</strong><span>${value || "-"}</span></div>
   `).join("");
 }
+
+chooseNewBtn.addEventListener("click", () => startForm("Murid Baru"));
+chooseMutasiBtn.addEventListener("click", () => startForm("Murid Mutasi"));
+changeTypeBtn.addEventListener("click", resetToTypeSelector);
 
 prevBtn.addEventListener("click", () => {
   if (currentStep > 0) {
@@ -134,7 +245,7 @@ prevBtn.addEventListener("click", () => {
 
 nextBtn.addEventListener("click", () => {
   if (!validateCurrentStep()) return;
-  if (currentStep < steps.length - 1) {
+  if (currentStep < getActiveSteps().length - 1) {
     currentStep += 1;
     updateStep();
   }
@@ -142,6 +253,7 @@ nextBtn.addEventListener("click", () => {
 
 form.addEventListener("submit", (event) => {
   event.preventDefault();
+  syncMutationFields();
   if (!validateCurrentStep()) return;
 
   if (!WEB_APP_URL || WEB_APP_URL.includes("PASTE_URL")) {
@@ -170,7 +282,7 @@ submitFrame.addEventListener("load", () => {
 function showSuccess() {
   submitted = false;
   submitBtn.disabled = false;
-  submitBtn.textContent = "Kirim Pendaftaran";
+  submitBtn.textContent = registrationType === "Murid Mutasi" ? "Kirim Data Mutasi" : "Kirim Pendaftaran";
   successModal.classList.add("show");
   successModal.setAttribute("aria-hidden", "false");
 }
@@ -178,9 +290,9 @@ function showSuccess() {
 newEntryBtn.addEventListener("click", () => {
   successModal.classList.remove("show");
   successModal.setAttribute("aria-hidden", "true");
-  form.reset();
-  currentStep = 0;
-  updateStep();
+  resetToTypeSelector();
 });
 
-updateStep();
+setMutationFieldsState(false);
+progressWrap.classList.add("is-hidden");
+form.classList.add("is-hidden");
