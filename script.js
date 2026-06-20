@@ -271,10 +271,9 @@ nextBtn.addEventListener("click", () => {
   }
 });
 
-form.addEventListener("submit", (event) => {
-  event.preventDefault();
+async function sendFormData() {
   syncMutationFields();
-  if (!validateCurrentStep()) return;
+  if (!validateAllSteps()) return;
 
   if (!WEB_APP_URL || WEB_APP_URL.includes("PASTE_URL")) {
     showToast("URL Web App Google Apps Script belum dipasang di script.js.", "error");
@@ -284,20 +283,59 @@ form.addEventListener("submit", (event) => {
   submitted = true;
   submitBtn.disabled = true;
   submitBtn.textContent = "Mengirim...";
-  form.action = WEB_APP_URL;
+  showToast("Data sedang dikirim. Mohon tunggu...", "");
 
-  // Submit standar ke iframe agar aman dari kendala CORS GitHub Pages -> Apps Script.
-  HTMLFormElement.prototype.submit.call(form);
+  try {
+    const formData = new FormData(form);
+    const body = new URLSearchParams();
+    formData.forEach((value, key) => body.append(key, value));
 
-  // Cadangan tampilan berhasil. Data tetap diproses oleh Apps Script.
-  setTimeout(() => {
-    if (submitted) showSuccess();
-  }, 1800);
+    // mode no-cors dipakai agar pengiriman dari GitHub Pages/hosting ke Google Apps Script
+    // tetap berjalan stabil pada browser HP. Respons tidak dibaca, tetapi data tetap terkirim.
+    await fetch(WEB_APP_URL, {
+      method: "POST",
+      mode: "no-cors",
+      body
+    });
+
+    setTimeout(showSuccess, 600);
+  } catch (error) {
+    submitted = false;
+    submitBtn.disabled = false;
+    submitBtn.textContent = registrationType === "Murid Mutasi" ? "Kirim Data Mutasi" : "Kirim Pendaftaran";
+    showToast("Data belum terkirim. Periksa koneksi internet, lalu tekan Kirim lagi.", "error");
+  }
+}
+
+function validateAllSteps() {
+  const steps = getActiveSteps();
+
+  for (let i = 0; i < steps.length; i += 1) {
+    const inputs = Array.from(steps[i].querySelectorAll("input, select, textarea"));
+    const valid = inputs.every(validateField);
+
+    if (!valid) {
+      currentStep = i;
+      updateStep();
+      setTimeout(() => {
+        const firstInvalid = steps[i].querySelector(".invalid");
+        if (firstInvalid) firstInvalid.focus();
+        showToast(`Mohon lengkapi atau perbaiki data pada Langkah ${i + 1}.`, "error");
+      }, 150);
+      return false;
+    }
+  }
+
+  return true;
+}
+
+submitBtn.addEventListener("click", sendFormData);
+
+form.addEventListener("submit", (event) => {
+  event.preventDefault();
+  sendFormData();
 });
 
-submitFrame.addEventListener("load", () => {
-  if (submitted) showSuccess();
-});
 
 function showSuccess() {
   submitted = false;
